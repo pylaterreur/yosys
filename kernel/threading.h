@@ -358,8 +358,8 @@ public:
 	using Buckets = std::vector<std::vector<T>>;
 	class iterator {
 	public:
-		iterator(typename Buckets::iterator bucket_it, typename Buckets::iterator bucket_end)
-			: bucket_it(std::move(bucket_it)), bucket_end(std::move(bucket_end)) {
+		iterator(typename Buckets::iterator it, typename Buckets::iterator end)
+			: bucket_it(it), bucket_end(end) {
 			if (bucket_it != bucket_end)
 				inner_it = bucket_it->begin();
 			normalize();
