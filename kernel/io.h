@@ -494,6 +494,10 @@ bool create_directory(const std::string& dirname);
 bool make_private_directory(const std::string& dirname);
 std::string make_user_tmpdir(const std::string& name);
 std::string escape_filename_spaces(const std::string& filename);
+#ifndef _WIN32
+// Quote a word for the shell that run_command() passes its command to (sh -c).
+std::string quote_shell_word(const std::string &word);
+#endif
 void append_globbed(std::vector<std::string>& paths, std::string pattern);
 std::string name_from_file_path(std::string path);
 std::string absolute_path(const std::string& path);

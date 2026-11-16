@@ -177,7 +177,7 @@ void abc9_module(RTLIL::Design *design, std::string script_file, std::string exe
 	std::string abc9_script;
 
 	if (!lut_costs.empty())
-		abc9_script += stringf("read_lut %s/lutdefs.txt; ", tempdir_name);
+		abc9_script += stringf("read_lut \"%s/lutdefs.txt\"; ", tempdir_name);
 	else if (!lut_file.empty())
 		abc9_script += stringf("read_lut \"%s\"; ", lut_file);
 	else if (!liberty_files.empty()) {
@@ -211,7 +211,7 @@ void abc9_module(RTLIL::Design *design, std::string script_file, std::string exe
 
 	log_assert(!box_file.empty());
 	abc9_script += stringf("read_box \"%s\"; ", box_file);
-	abc9_script += stringf("&read %s/input.xaig; &ps; ", tempdir_name);
+	abc9_script += stringf("&read \"%s/input.xaig\"; &ps; ", tempdir_name);
 
 	if (!script_file.empty()) {
 		if (script_file[0] == '+') {
@@ -247,14 +247,14 @@ void abc9_module(RTLIL::Design *design, std::string script_file, std::string exe
 		for (size_t pos = abc9_script.find("&mfs"); pos != std::string::npos; pos = abc9_script.find("&mfs", pos))
 			abc9_script = abc9_script.erase(pos, strlen("&mfs"));
 	else {
-		auto s = stringf("&write -n %s/output.aig; ", tempdir_name);
+		auto s = stringf("&write -n \"%s/output.aig\"; ", tempdir_name);
 		for (size_t pos = abc9_script.find("&mfs"); pos != std::string::npos; pos = abc9_script.find("&mfs", pos)) {
 			abc9_script = abc9_script.insert(pos, s);
 			pos += GetSize(s) + strlen("&mfs");
 		}
 	}
 
-	abc9_script += stringf("; &ps -l; &write -n %s/output.aig", tempdir_name);
+	abc9_script += stringf("; &ps -l; &write -n \"%s/output.aig\"", tempdir_name);
 	if (design->scratchpad_get_bool("abc9.verify", true)) {
 		if (dff_mode)
 			abc9_script += "; &verify -s";
@@ -286,7 +286,13 @@ void abc9_module(RTLIL::Design *design, std::string script_file, std::string exe
 		fclose(f);
 	}
 
+	// ABC runs "source <script>" for -f and splits the name at spaces: give it the name in double quotes
+	std::string abc_script_arg = "\"" + tempdir_name + "/abc.script\"";
+#ifdef _WIN32
 	buffer = stringf("\"%s\" -s -f %s/abc.script 2>&1", exe_file, tempdir_name);
+#else
+	buffer = stringf("%s -s -f %s 2>&1", quote_shell_word(exe_file), quote_shell_word(abc_script_arg));
+#endif
 	log("Running ABC command: %s\n", replace_tempdir(buffer, tempdir_name, show_tempdir));
 
 #ifndef YOSYS_LINK_ABC
@@ -313,11 +319,10 @@ void abc9_module(RTLIL::Design *design, std::string script_file, std::string exe
 	fclose(temp_stdouterr_w);
 	// These needs to be mutable, supposedly due to getopt
 	char *abc9_argv[5];
-	string tmp_script_name = stringf("%s/abc.script", tempdir_name);
 	abc9_argv[0] = strdup(exe_file.c_str());
 	abc9_argv[1] = strdup("-s");
 	abc9_argv[2] = strdup("-f");
-	abc9_argv[3] = strdup(tmp_script_name.c_str());
+	abc9_argv[3] = strdup(abc_script_arg.c_str());
 	abc9_argv[4] = 0;
 	int ret = abc::Abc_RealMain(4, abc9_argv);
 	free(abc9_argv[0]);
@@ -531,6 +536,7 @@ struct Abc9ExePass : public Pass {
 			}
 			if (arg == "-cwd" && argidx+1 < args.size()) {
 				tempdir_name = args[++argidx];
+				rewrite_filename(tempdir_name);
 				continue;
 			}
 			if (arg == "-liberty" && argidx+1 < args.size()) {

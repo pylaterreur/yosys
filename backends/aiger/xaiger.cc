@@ -769,6 +769,7 @@ struct XAigerBackend : public Backend {
 			}
 			if (map_filename.empty() && args[argidx] == "-map" && argidx+1 < args.size()) {
 				map_filename = args[++argidx];
+				rewrite_filename(map_filename);
 				continue;
 			}
 			if (args[argidx] == "-map-strings") {

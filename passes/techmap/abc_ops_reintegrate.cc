@@ -780,6 +780,7 @@ struct AbcOpsReintegratePass : public Pass {
 			}
 			if (map_filename.empty() && arg == "-map" && argidx+1 < args.size()) {
 				map_filename = args[++argidx];
+				rewrite_filename(map_filename);
 				continue;
 			}
 		}

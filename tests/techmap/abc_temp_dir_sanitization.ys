@@ -9,5 +9,5 @@ endmodule
 EOT
 techmap
 
-logger -warn " /tmp/" -werror " /tmp/"
+logger -warn "/tmp/" -werror "/tmp/"
 abc -g all

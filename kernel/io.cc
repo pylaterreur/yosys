@@ -444,6 +444,21 @@ std::string escape_filename_spaces(const std::string& filename)
 	return out;
 }
 
+#ifndef _WIN32
+std::string quote_shell_word(const std::string &word)
+{
+	std::string out = "'";
+	for (char c : word) {
+		if (c == '\'')
+			out += "'\\''";
+		else
+			out.push_back(c);
+	}
+	out += "'";
+	return out;
+}
+#endif
+
 void append_globbed(std::vector<std::string>& paths, std::string pattern)
 {
 	rewrite_filename(pattern);

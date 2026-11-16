@@ -1063,9 +1063,9 @@ void AbcModuleState::prepare_module(RTLIL::Design *design, RTLIL::Module *module
 			run_abc.abc_script += stringf("read_constr -v \"%s\"; ", config.constr_file);
 	} else
 	if (!config.lut_costs.empty())
-		run_abc.abc_script += stringf("read_lut %s/lutdefs.txt; ", config.global_tempdir_name);
+		run_abc.abc_script += stringf("read_lut \"%s/lutdefs.txt\"; ", config.global_tempdir_name);
 	else
-		run_abc.abc_script += stringf("read_library %s/stdcells.genlib; ", config.global_tempdir_name);
+		run_abc.abc_script += stringf("read_library \"%s/stdcells.genlib\"; ", config.global_tempdir_name);
 
 	if (!config.script_file.empty()) {
 		const std::string &script_file = config.script_file;
@@ -1078,7 +1078,7 @@ void AbcModuleState::prepare_module(RTLIL::Design *design, RTLIL::Module *module
 				else
 					run_abc.abc_script += script_file[i];
 		} else
-			run_abc.abc_script += stringf("source %s", script_file);
+			run_abc.abc_script += stringf("source \"%s\"", script_file);
 	} else if (!config.lut_costs.empty()) {
 		bool all_luts_cost_same = true;
 		for (int this_cost : config.lut_costs)
@@ -1101,7 +1101,7 @@ void AbcModuleState::prepare_module(RTLIL::Design *design, RTLIL::Module *module
 
 	if (config.abc_dress)
 		run_abc.abc_script += stringf("; dress \"%s/input.blif\"", run_abc.per_run_tempdir_name);
-	run_abc.abc_script += stringf("; write_blif %s/output.blif", run_abc.per_run_tempdir_name);
+	run_abc.abc_script += stringf("; write_blif \"%s/output.blif\"", run_abc.per_run_tempdir_name);
 	run_abc.abc_script = add_echos_to_abc_cmd(run_abc.abc_script);
 #if defined(REUSE_YOSYS_ABC_PROCESSES)
 	if (config.is_yosys_abc())
@@ -1348,6 +1348,8 @@ void RunAbcState::run(ConcurrentStack<AbcProcess> &)
 	}
 	int ret;
 	std::string tmp_script_name = stringf("%s/abc.script", per_run_tempdir_name);
+	// ABC runs "source <script>" for -f and splits the name at spaces: give it the name in double quotes
+	std::string abc_script_arg = "\"" + tmp_script_name + "\"";
 	do {
 		logs.log("Running ABC script: %s\n", replace_tempdir(tmp_script_name, config.global_tempdir_name, per_run_tempdir_name, config.show_tempdir));
 
@@ -1377,7 +1379,7 @@ void RunAbcState::run(ConcurrentStack<AbcProcess> &)
 		abc_argv[0] = strdup(config.exe_file.c_str());
 		abc_argv[1] = strdup("-s");
 		abc_argv[2] = strdup("-f");
-		abc_argv[3] = strdup(tmp_script_name.c_str());
+		abc_argv[3] = strdup(abc_script_arg.c_str());
 		abc_argv[4] = 0;
 		ret = abc::Abc_RealMain(4, abc_argv);
 		free(abc_argv[0]);
@@ -1408,7 +1410,7 @@ void RunAbcState::run(ConcurrentStack<AbcProcess> &)
 				}
 			std::string cmd = stringf(
 					"empty\n"
-					"source %s\n"
+					"source \"%s\"\n"
 					"echo YOSYS_ABC_END\n", tmp_script_name);
 			ret = write(process.to_child_pipe, cmd.c_str(), cmd.size());
 			if (ret != static_cast<int>(cmd.size())) {
@@ -1422,7 +1424,11 @@ void RunAbcState::run(ConcurrentStack<AbcProcess> &)
 			break;
 		}
 #endif
+#ifdef _WIN32
 		std::string cmd = stringf("\"%s\" -s -f %s 2>&1", config.exe_file, tmp_script_name);
+#else
+		std::string cmd = stringf("%s -s -f %s 2>&1", quote_shell_word(config.exe_file), quote_shell_word(abc_script_arg));
+#endif
 		ret = run_command(cmd, std::bind(&abc_output_filter::next_line, filt, std::placeholders::_1));
 #endif
 	} while (false);

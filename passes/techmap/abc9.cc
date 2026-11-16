@@ -415,13 +415,15 @@ struct Abc9Pass : public ScriptPass
 					tempdir_name = make_temp_dir(tempdir_name);
 
 					if (!lut_mode)
-						run_nocheck(stringf("abc9_ops -write_lut %s/input.lut", tempdir_name));
+						run_nocheck(stringf("abc9_ops -write_lut \"%s/input.lut\"", tempdir_name));
 					if (box_file.empty())
-						run_nocheck(stringf("abc9_ops -write_box %s/input.box", tempdir_name));
+						run_nocheck(stringf("abc9_ops -write_box \"%s/input.box\"", tempdir_name));
 					if (xaiger == 1)
-						run_nocheck(stringf("write_xaiger -map %s/input.sym %s %s/input.xaig", tempdir_name, dff_mode ? "-dff" : "", tempdir_name));
+						run_nocheck(stringf("write_xaiger -map \"%s/input.sym\" %s \"%s/input.xaig\"",
+								tempdir_name, dff_mode ? "-dff" : "", tempdir_name));
 					else
-						run_nocheck(stringf("write_xaiger2 -mapping_prep -map2 %s/input.sym %s/input.xaig", tempdir_name, tempdir_name));
+						run_nocheck(stringf("write_xaiger2 -mapping_prep -map2 \"%s/input.sym\" \"%s/input.xaig\"",
+								tempdir_name, tempdir_name));
 
 					int num_outputs = active_design->scratchpad_get_int("write_xaiger.num_outputs");
 
@@ -433,16 +435,17 @@ struct Abc9Pass : public ScriptPass
 							num_outputs);
 					if (num_outputs) {
 						std::string abc9_exe_cmd;
-						abc9_exe_cmd += stringf("%s -cwd %s", exe_cmd.str(), tempdir_name);
+						abc9_exe_cmd += stringf("%s -cwd \"%s\"", exe_cmd.str(), tempdir_name);
 						if (!lut_mode)
-							abc9_exe_cmd += stringf(" -lut %s/input.lut", tempdir_name);
+							abc9_exe_cmd += stringf(" -lut \"%s/input.lut\"", tempdir_name);
 						if (box_file.empty())
-							abc9_exe_cmd += stringf(" -box %s/input.box", tempdir_name);
+							abc9_exe_cmd += stringf(" -box \"%s/input.box\"", tempdir_name);
 						else
-							abc9_exe_cmd += stringf(" -box %s", box_file);
+							abc9_exe_cmd += stringf(" -box \"%s\"", box_file);
 						run_nocheck(abc9_exe_cmd);
-						run_nocheck(stringf("read_aiger -xaiger -module_name %s$abc9 %s/output.aig", mod, tempdir_name));
-						run_nocheck(stringf("abc_ops_reintegrate -map %s/input.sym %s", tempdir_name, dff_mode ? "-dff" : ""));
+						run_nocheck(stringf("read_aiger -xaiger -module_name %s$abc9 \"%s/output.aig\"", mod, tempdir_name));
+						run_nocheck(stringf("abc_ops_reintegrate -map \"%s/input.sym\" %s",
+								tempdir_name, dff_mode ? "-dff" : ""));
 					}
 					else
 						log("Don't call ABC as there is nothing to map.\n");

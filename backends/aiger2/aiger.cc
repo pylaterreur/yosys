@@ -1944,9 +1944,10 @@ struct XAiger2Backend : Backend {
 				writer.flatten = true;
 			else if (args[argidx] == "-mapping_prep")
 				writer.mapping_prep = true;
-			else if (args[argidx] == "-map2" && argidx + 1 < args.size())
+			else if (args[argidx] == "-map2" && argidx + 1 < args.size()) {
 				map_filename = args[++argidx];
-			else
+				rewrite_filename(map_filename);
+			} else
 				break;
 		}
 		extra_args(f, filename, args, argidx, true);
