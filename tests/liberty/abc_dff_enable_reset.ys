@@ -1,0 +1,62 @@
+# abc -dff with a cell library must keep the enable and the resets of the flops.
+# ABC may store a flop inverted, so the mapped design is proved equivalent
+# instead of comparing reset values.
+read_verilog <<EOT
+module top_ce(input clk, en, a, b, output reg q);
+	always @(posedge clk) if (en) q <= a ^ b;
+endmodule
+module top_arst(input clk, rst, a, b, output reg q);
+	always @(posedge clk, posedge rst) if (rst) q <= 1'b1; else q <= a ^ b;
+endmodule
+module top_srst(input clk, rst, a, b, output reg q);
+	always @(posedge clk) if (rst) q <= 1'b1; else q <= a ^ b;
+endmodule
+EOT
+design -save orig
+
+hierarchy -top top_ce
+proc; opt; techmap; opt
+design -save gold
+abc -dff -liberty normal.lib
+select -assert-count 1 t:$_DFFE_PP_
+select -assert-none t:$_DFF_P_
+read_liberty -ignore_miss_func normal.lib
+flatten; opt_clean
+design -stash gate
+design -copy-from gold -as gold top_ce
+design -copy-from gate -as gate top_ce
+miter -equiv -flatten -make_assert -ignore_gold_x gold gate miter
+hierarchy -top miter; async2sync
+sat -verify -prove-asserts -set-init-zero -seq 4 miter
+
+design -load orig
+hierarchy -top top_arst
+proc; opt; techmap; opt
+design -save gold
+abc -dff -liberty normal.lib
+select -assert-count 1 t:$_DFF_PP?_
+select -assert-none t:$_DFF_P_
+read_liberty -ignore_miss_func normal.lib
+flatten; opt_clean
+design -stash gate
+design -copy-from gold -as gold top_arst
+design -copy-from gate -as gate top_arst
+miter -equiv -flatten -make_assert -ignore_gold_x gold gate miter
+hierarchy -top miter; async2sync
+sat -verify -prove-asserts -set-init-zero -seq 4 miter
+
+design -load orig
+hierarchy -top top_srst
+proc; opt; techmap; opt
+design -save gold
+abc -dff -liberty normal.lib
+select -assert-count 1 t:$_SDFF_PP?_
+select -assert-none t:$_DFF_P_
+read_liberty -ignore_miss_func normal.lib
+flatten; opt_clean
+design -stash gate
+design -copy-from gold -as gold top_srst
+design -copy-from gate -as gate top_srst
+miter -equiv -flatten -make_assert -ignore_gold_x gold gate miter
+hierarchy -top miter; async2sync
+sat -verify -prove-asserts -set-init-zero -seq 4 miter
