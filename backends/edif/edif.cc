@@ -303,7 +303,7 @@ struct EdifBackend : public Backend {
 		std::vector<RTLIL::Module*> sorted_modules;
 
 		// extract module dependencies
-		std::map<RTLIL::Module*, std::set<RTLIL::Module*>> module_deps;
+		std::map<RTLIL::Module*, std::set<RTLIL::Module*>, RTLIL::sort_by_name_str<RTLIL::Module>> module_deps;
 		for (auto module : design->modules()) {
 			module_deps[module] = std::set<RTLIL::Module*>();
 			for (auto cell : module->cells())

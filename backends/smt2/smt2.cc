@@ -41,7 +41,8 @@ struct Smt2Worker
 
 	std::vector<std::string> decls, trans, hier, dtmembers;
 	std::map<RTLIL::SigBit, RTLIL::Cell*> bit_driver;
-	std::set<RTLIL::Cell*> exported_cells, hiercells, hiercells_queue;
+	std::set<RTLIL::Cell*> exported_cells;
+	std::set<RTLIL::Cell*, RTLIL::sort_by_name_str<RTLIL::Cell>> hiercells, hiercells_queue;
 	pool<Cell*> recursive_cells, registers;
 	std::vector<Mem> memories;
 	dict<Cell*, Mem*> mem_cells;
@@ -1167,7 +1168,7 @@ struct Smt2Worker
 
 		while (!hiercells_queue.empty())
 		{
-			std::set<RTLIL::Cell*> queue;
+			std::set<RTLIL::Cell*, RTLIL::sort_by_name_str<RTLIL::Cell>> queue;
 			queue.swap(hiercells_queue);
 
 			for (auto cell : queue)
@@ -1858,7 +1859,7 @@ struct Smt2Backend : public Backend {
 		std::vector<RTLIL::Module*> sorted_modules;
 
 		// extract module dependencies
-		std::map<RTLIL::Module*, std::set<RTLIL::Module*>> module_deps;
+		std::map<RTLIL::Module*, std::set<RTLIL::Module*>, RTLIL::sort_by_name_str<RTLIL::Module>> module_deps;
 		for (auto mod : design->modules()) {
 			module_deps[mod] = std::set<RTLIL::Module*>();
 			for (auto cell : mod->cells())
