@@ -51,7 +51,7 @@ struct JsonWriter
 	string get_string(string str)
 	{
 		string newstr = "\"";
-		for (char c : str) {
+		for (unsigned char c : str) {
 			if (c == '\\')
 				newstr += "\\\\";
 			else if (c == '"')

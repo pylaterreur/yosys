@@ -12,3 +12,14 @@ design -reset
 read_json temp/test_escapes.json
 write_rtlil temp/test_escapes.json.il
 ! grep -F 'attribute \src "\" / \\ \010 \014 \n \015 \t \025 \033"' temp/test_escapes.json.il
+design -reset
+read_verilog <<EOT
+(* src = "\303\201" *)
+module foo;
+endmodule
+EOT
+write_json temp/test_non_ascii.json
+design -reset
+read_json temp/test_non_ascii.json
+write_rtlil temp/test_non_ascii.json.il
+! grep -F 'attribute \src "\303\201"' temp/test_non_ascii.json.il
