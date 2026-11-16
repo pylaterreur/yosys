@@ -1,0 +1,10 @@
+read_verilog <<EOT
+module top(input clk, en, rst, srst, a, b, output reg q);
+	always @(posedge clk, posedge rst) if (rst) q <= 1'b0; else if (en) q <= a ^ b;
+endmodule
+EOT
+proc; opt; techmap; opt
+logger -expect log "matching posedge clock domain: .clk, enabled by .en, asynchronously reset by .rst" 1
+abc -clk clk,en,rst
+logger -expect log "matching posedge clock domain: .clk, enabled by .en, synchronously reset by .srst" 1
+abc -clk clk,en,,srst
