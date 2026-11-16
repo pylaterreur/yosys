@@ -24,11 +24,15 @@ public:
 	bool open(const std::string &filename) {
 		return outbuf.open(filename);
 	}
+	bool close() {
+		return outbuf.close();
+	}
 private:
 	class obuf : public std::stringbuf {
 	public:
 		obuf();
 		bool open(const std::string &filename);
+		bool close();
 		virtual int sync() override;
 		virtual ~obuf();
 	private:

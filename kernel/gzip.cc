@@ -37,11 +37,18 @@ int gzip_ostream::obuf::sync() {
     return 0;
 }
 
+bool gzip_ostream::obuf::close() {
+    if (!gzf)
+        return true;
+    bool ok = sync() == 0;
+    if (Zlib::gzclose(gzf) != Z_OK)
+        ok = false;
+    gzf = nullptr;
+    return ok;
+}
+
 gzip_ostream::obuf::~obuf() {
-    if (gzf) {
-        sync();
-        Zlib::gzclose(gzf);
-    }
+    close();
 }
 
 bool gzip_istream::ibuf::open(const std::string& filename) {

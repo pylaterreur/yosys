@@ -590,14 +590,34 @@ Backend::~Backend()
 {
 }
 
+static bool close_output_stream(std::ostream *f)
+{
+	f->flush();
+	if (f->fail())
+		return false;
+	if (auto *ff = dynamic_cast<std::ofstream*>(f)) {
+		ff->close();
+		return !ff->fail();
+	}
+#ifdef YOSYS_ENABLE_ZLIB
+	if (auto *gf = dynamic_cast<gzip_ostream*>(f))
+		return gf->close();
+#endif
+	return true;
+}
+
 void Backend::execute(std::vector<std::string> args, RTLIL::Design *design)
 {
 	std::ostream *f = NULL;
 	auto state = pre_execute();
 	execute(f, std::string(), args, design);
 	post_execute(state);
-	if (f != &std::cout)
+	if (f != &std::cout) {
+		bool ok = f == NULL || close_output_stream(f);
 		delete f;
+		if (!ok)
+			log_cmd_error("Error writing the output of `%s'.\n", pass_name);
+	}
 }
 
 void Backend::extra_args(std::ostream *&f, std::string &filename, std::vector<std::string> args, size_t argidx, bool bin_output)
