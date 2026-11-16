@@ -27,7 +27,7 @@ PRIVATE_NAMESPACE_BEGIN
 
 struct SplitnetsWorker
 {
-	std::map<RTLIL::Wire*, std::vector<RTLIL::SigBit>> splitmap;
+	dict<RTLIL::Wire*, std::vector<RTLIL::SigBit>> splitmap;
 
 	void append_wire(RTLIL::Module *module, RTLIL::Wire *wire, int offset, int width, std::string format)
 	{
@@ -88,9 +88,13 @@ struct SplitnetsWorker
 
 	void operator()(RTLIL::SigSpec &sig)
 	{
-		for (auto &bit : sig)
-			if (splitmap.count(bit.wire) > 0)
-				bit = splitmap.at(bit.wire).at(bit.offset);
+		for (auto &bit : sig) {
+			if (bit.wire == nullptr)
+				continue;
+			auto it = splitmap.find(bit.wire);
+			if (it != splitmap.end())
+				bit = it->second.at(bit.offset);
+		}
 	}
 };
 
@@ -173,7 +177,7 @@ struct SplitnetsPass : public Pass {
 			{
 				CellTypes ct(design);
 
-				std::map<RTLIL::Wire*, std::set<int>> split_wires_at;
+				dict<RTLIL::Wire*, std::set<int>> split_wires_at;
 
 				for (auto c : module->cells())
 				for (auto &p : c->connections())
@@ -196,13 +200,17 @@ struct SplitnetsPass : public Pass {
 					}
 				}
 
-				for (auto &it : split_wires_at) {
+				std::vector<RTLIL::Wire*> order;
+				for (auto &it : split_wires_at)
+					order.push_back(it.first);
+				std::sort(order.begin(), order.end(), RTLIL::sort_by_name_str<RTLIL::Wire>());
+				for (auto wire : order) {
 					int cursor = 0;
-					for (int next_cursor : it.second) {
-						worker.append_wire(module, it.first, cursor, next_cursor - cursor, format);
+					for (int next_cursor : split_wires_at.at(wire)) {
+						worker.append_wire(module, wire, cursor, next_cursor - cursor, format);
 						cursor = next_cursor;
 					}
-					worker.append_wire(module, it.first, cursor, it.first->width - cursor, format);
+					worker.append_wire(module, wire, cursor, wire->width - cursor, format);
 				}
 			}
 			else
@@ -216,9 +224,13 @@ struct SplitnetsPass : public Pass {
 					}
 				}
 
+				std::vector<RTLIL::Wire*> order;
 				for (auto &it : worker.splitmap)
-					for (int i = 0; i < it.first->width; i++)
-						worker.append_wire(module, it.first, i, 1, format);
+					order.push_back(it.first);
+				std::sort(order.begin(), order.end(), RTLIL::sort_by_name_str<RTLIL::Wire>());
+				for (auto wire : order)
+					for (int i = 0; i < wire->width; i++)
+						worker.append_wire(module, wire, i, 1, format);
 			}
 
 			module->rewrite_sigspecs(worker);
