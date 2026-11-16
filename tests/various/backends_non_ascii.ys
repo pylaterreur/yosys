@@ -1,0 +1,20 @@
+! mkdir -p temp
+read_verilog <<EOT
+(* note = "\303\201" *)
+module foo(input a, output y);
+	assign y = a;
+endmodule
+EOT
+write_verilog temp/test_non_ascii.v
+design -reset
+read_verilog temp/test_non_ascii.v
+write_rtlil temp/test_non_ascii.v.il
+! grep -F '"\303\201"' temp/test_non_ascii.v.il
+design -reset
+read_verilog <<EOT
+module foo;
+	bar #(.P("\303\201")) i();
+endmodule
+EOT
+write_blif -param temp/test_non_ascii.blif
+! grep -F '.param P "\303\201"' temp/test_non_ascii.blif

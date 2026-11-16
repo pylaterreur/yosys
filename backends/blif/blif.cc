@@ -194,7 +194,7 @@ struct BlifDumper
 			if (param.second.flags & RTLIL::CONST_FLAG_STRING) {
 				std::string str = param.second.decode_string();
 				f << stringf("\"");
-				for (char ch : str)
+				for (unsigned char ch : str)
 					if (ch == '"' || ch == '\\')
 						f << stringf("\\%c", ch);
 					else if (ch < 32 || ch >= 127)

@@ -373,8 +373,8 @@ struct VerilogWriter
 					f << stringf("\\n");
 				else if (str[i] == '\t')
 					f << stringf("\\t");
-				else if (str[i] < 32)
-					f << stringf("\\%03o", str[i]);
+				else if ((unsigned char)str[i] < 32)
+					f << stringf("\\%03o", (unsigned char)str[i]);
 				else if (str[i] == '"')
 					f << stringf("\\\"");
 				else if (str[i] == '\\')
@@ -545,7 +545,7 @@ struct VerilogWriter
 				std::string extmem_filename = stringf("%s-%d.mem", extmem_prefix, extmem_counter++);
 
 				std::string extmem_filename_esc;
-				for (auto c : extmem_filename)
+				for (unsigned char c : extmem_filename)
 				{
 					if (c == '\n')
 						extmem_filename_esc += "\\n";
