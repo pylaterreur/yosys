@@ -382,8 +382,11 @@ void rewrite_filename(std::string &filename)
 	if (filename.compare(0, 2, "+/") == 0)
 		filename = proc_share_dirname() + filename.substr(2);
 #ifndef _WIN32
-	if (filename.compare(0, 2, "~/") == 0)
-		filename = filename.replace(0, 1, getenv("HOME"));
+	if (filename.compare(0, 2, "~/") == 0) {
+		const char *home = getenv("HOME");
+		if (home != nullptr)
+			filename.replace(0, 1, home);
+	}
 #endif
 }
 
